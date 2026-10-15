@@ -28,8 +28,8 @@ export class GatewayAccount {
   @Column({ name: 'customer_code', type: 'varchar', length: 100 })
   customerCode: string
 
-  @Column({ name: 'store_key', type: 'varchar', length: 255, select: false })
-  storeKey: string
+  @Column({ name: 'store_key', type: 'text', select: false })
+  encryptedStoreKey: string
 
   @Column({
     name: 'encrypted_access_token',

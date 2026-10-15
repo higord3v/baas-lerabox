@@ -9,7 +9,9 @@ describe('TokenCipherService', () => {
       const encrypted = cipher.encrypt('gateway-token')
       expect(encrypted).not.toContain('gateway-token')
       expect(cipher.decrypt(encrypted)).toBe('gateway-token')
-      expect(() => cipher.decrypt(`${encrypted.slice(0, -1)}x`)).toThrow()
+      const parts = encrypted.split(':')
+      parts[3] = `${parts[3][0] === 'A' ? 'B' : 'A'}${parts[3].slice(1)}`
+      expect(() => cipher.decrypt(parts.join(':'))).toThrow()
     } finally {
       vi.unstubAllEnvs()
     }

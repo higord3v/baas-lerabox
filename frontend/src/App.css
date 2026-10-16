@@ -173,6 +173,7 @@
 .form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
   gap: 17px 14px;
 }
 
@@ -205,6 +206,35 @@
 .form-field select:focus-visible {
   border-color: #369a69;
   box-shadow: 0 0 0 3px rgba(54, 154, 105, 0.12);
+}
+
+.zip-code-field {
+  display: grid;
+  align-content: start;
+  gap: 7px;
+}
+
+.zip-code-field__message {
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.zip-code-field__message--error {
+  color: #8d292e;
+}
+
+.address-number-field {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+}
+
+.address-number-field__checkbox {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #3c5044;
+  font-size: 13px;
 }
 
 .primary-button {

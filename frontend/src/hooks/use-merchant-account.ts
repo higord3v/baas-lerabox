@@ -70,7 +70,7 @@ export function useMerchantAccount() {
     }
   }
 
-  async function signIn(input: LocalCredentials): Promise<void> {
+  async function signIn(input: LocalCredentials): Promise<boolean> {
     setBusy(true)
     setError('')
     try {
@@ -79,8 +79,10 @@ export function useMerchantAccount() {
       setLoadingAccount(true)
       setToken(accessToken)
       setNotice('')
+      return true
     } catch (reason) {
       setError(errorMessage(reason, 'Falha no login.'))
+      return false
     } finally {
       setBusy(false)
     }

@@ -4,7 +4,7 @@ import { FormField } from './form-field'
 
 interface LoginFormProps {
   busy: boolean
-  onSubmit: (input: LocalCredentials) => Promise<void>
+  onSubmit: (input: LocalCredentials) => Promise<void | boolean>
 }
 
 export function LoginForm({ busy, onSubmit }: LoginFormProps) {

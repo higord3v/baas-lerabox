@@ -20,8 +20,9 @@ services:
   api:
     build:
       context: ./api
+      target: development
     environment:
-      NODE_ENV: production
+      NODE_ENV: development
       PORT: "3000"
       DB_HOST: mysql
       DB_PORT: "3306"
@@ -35,14 +36,37 @@ services:
         condition: service_healthy
     ports:
       - "${API_HOST_PORT:-3000}:3000"
+    volumes:
+      - ./api:/workspace/api
+      - ./.env:/workspace/.env:ro
+      - api_node_modules:/workspace/api/node_modules
+    working_dir: /workspace/api
+    command: sh -c "pnpm run build && pnpm run db:migrate && pnpm run start:dev"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000').then((response) => process.exit(response.status < 500 ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 60s
 
   frontend:
     build:
       context: ./frontend
+      target: development
     depends_on:
-      - api
+      api:
+        condition: service_healthy
+    environment:
+      VITE_API_PROXY_TARGET: http://api:3000
+      VITE_USE_POLLING: "true"
     ports:
-      - "8080:80"
+      - "${FRONTEND_HOST_PORT:-8080}:5173"
+    volumes:
+      - ./frontend:/workspace/frontend
+      - frontend_node_modules:/workspace/frontend/node_modules
+    working_dir: /workspace/frontend
 
 volumes:
   mysql_data:
+  api_node_modules:
+  frontend_node_modules:

@@ -1,6 +1,6 @@
 # Lera Box BaaS
 
-Aplicação para lojistas com API NestJS, interface React e banco MySQL próprio. A API integra o gateway Lera Box por HTTP. O fluxo de conta do item 3.1 está disponível; checkout, carteira, saques e webhooks ainda serão implementados.
+Aplicação para lojistas com API NestJS, interface React e banco MySQL próprio. A API integra o gateway Lera Box por HTTP. Os fluxos de conta e checkout dos itens 3.1 e 3.2 estão disponíveis; carteira, saques e webhooks ainda serão implementados.
 
 ## Iniciar com Docker
 
@@ -17,6 +17,14 @@ Na primeira inicialização, a API aplica as migrations ao banco `baas`. A inter
 3. Após receber a senha do gateway por e-mail, use **Conectar gateway**. A API chama `POST /api/auth/login`, cifra o token e a `ChaveLoja` antes de armazená-los em `gateway_accounts` e retorna somente o estado da conexão. A senha do gateway não é persistida.
 
 Rotas BaaS: `POST /auth/register`, `POST /auth/login`, `GET /auth/me`, `POST /gateway-account/login` e `GET /gateway-account`. As três últimas exigem o Bearer token da sessão local. O contrato do provedor pode ser consultado no [Swagger do gateway](https://api.branchpay.com.br/docs).
+
+## Links de checkout
+
+Após conectar a conta do gateway, o lojista cria links Pix ou cartão pela interface. Para cartão, a interface consulta as taxas da bandeira e permite selecionar as parcelas; a API registra a taxa do momento da criação e verifica a tabela novamente antes de cobrar. O link público `/checkout/:id` permite ao pagador gerar o Pix ou pagar com cartão. No Pix, a página apresenta QR Code e código copia e cola.
+
+Rotas protegidas: `POST /checkout-links`, `GET /checkout-links`, `GET /checkout-links/:id` e `GET /checkout-links/fees?brand=VISA`. Rotas públicas: `GET /checkout/:id`, `POST /checkout/:id/pix`, `POST /checkout/:id/card` e `GET /checkout/:id/orders/:orderId`. Valores são enviados em centavos. Cada pagamento usa um `attemptKey` UUID para evitar cobranças repetidas quando a requisição é reenviada.
+
+O estado final de um pedido é confirmado por `GET /api/payments/:id` do gateway durante a consulta do resultado. A resposta inicial da cobrança, mesmo quando informa `APPROVED`, não atualiza o estado local. O tratamento de webhooks permanece no item 3.6.
 
 ## Desenvolvimento e verificação
 

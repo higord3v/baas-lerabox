@@ -36,4 +36,12 @@ export class GatewayAccountService {
   async status(userId: string): Promise<GatewayAccountStatusDto> {
     return { connected: Boolean(await this.accounts.findByUserId(userId)) }
   }
+
+  async accessTokenForUser(userId: string): Promise<string> {
+    const account = await this.accounts.findWithAccessTokenByUserId(userId)
+    if (!account?.encryptedAccessToken || (account.tokenExpiresAt && account.tokenExpiresAt <= new Date())) {
+      throw new ConflictException('Conecte novamente sua conta do gateway')
+    }
+    return this.cipher.decrypt(account.encryptedAccessToken)
+  }
 }

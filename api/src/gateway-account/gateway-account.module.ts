@@ -17,5 +17,6 @@ import { TokenCipherService } from './token-cipher.service.js'
     TokenCipherService,
     { provide: GATEWAY_ACCOUNT_REPOSITORY, useExisting: GatewayAccountRepository },
   ],
+  exports: [GatewayAccountService],
 })
 export class GatewayAccountModule {}

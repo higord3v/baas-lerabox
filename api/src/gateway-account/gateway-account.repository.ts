@@ -12,6 +12,13 @@ export class GatewayAccountRepository implements GatewayAccountRepositoryPort {
     return this.accounts.findOne({ where: { userId } })
   }
 
+  findWithAccessTokenByUserId(userId: string): Promise<GatewayAccount | null> {
+    return this.accounts.createQueryBuilder('account')
+      .addSelect('account.encryptedAccessToken')
+      .where('account.userId = :userId', { userId })
+      .getOne()
+  }
+
   findByCustomerCode(customerCode: string): Promise<GatewayAccount | null> {
     return this.accounts.findOne({ where: { customerCode } })
   }

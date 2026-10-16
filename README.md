@@ -10,6 +10,19 @@ Aplicação para lojistas com API NestJS, interface React e banco MySQL próprio
 
 Na primeira inicialização, a API aplica as migrations ao banco `baas`. A interface chama somente a API BaaS pelo caminho `/api`; o proxy encaminha as requisições para o backend.
 
+## Rodar a API localmente
+
+Use Node.js 24 e pnpm. Configure o `.env` da raiz como na seção acima e inicie apenas o MySQL com `docker compose up -d mysql`. Em seguida, execute na pasta `api/`:
+
+```bash
+pnpm install
+pnpm run build
+pnpm run db:migrate
+pnpm run start:dev
+```
+
+Os scripts locais carregam automaticamente `../.env`. A conexão usa `127.0.0.1:3307`, usuário `baas` e a senha `MYSQL_PASSWORD` desse arquivo. Se necessário, `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD` e `DB_NAME` substituem esses padrões. Para usar a porta 3000 com a API local e manter o serviço do Compose disponível ao frontend, execute `API_HOST_PORT=3001 docker compose up -d api` na raiz. Para liberar a porta 3000 quando a API do Compose já estiver em execução, use `docker compose stop api`.
+
 ## Cadastro e acesso
 
 1. Em **Criar conta**, informe dados de PF ou PJ e um e-mail e telefone válidos. O cadastro chama `POST /api/users` do gateway. O sandbox aceita CPF/CNPJ fictício, mas envia as credenciais do gateway para o e-mail informado.

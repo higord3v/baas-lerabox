@@ -1,0 +1,5 @@
+process.env.DB_HOST ??= '127.0.0.1'
+process.env.DB_PORT ??= '3307'
+process.env.DB_USER ??= 'baas'
+process.env.DB_PASSWORD ??= process.env.MYSQL_PASSWORD ?? ''
+process.env.DB_NAME ??= 'baas'

@@ -1,16 +1,18 @@
 import { useState } from 'react'
 import { Feedback } from './components/feedback'
+import { CheckoutManager } from './components/checkout-manager'
 import { GatewayAccountPanel } from './components/gateway-account-panel'
 import { IntroSection } from './components/intro-section'
 import { LoginForm } from './components/login-form'
 import { RegisterForm } from './components/register-form'
+import { PublicCheckout } from './components/public-checkout'
 import { SiteHeader } from './components/site-header'
 import { useMerchantAccount } from './hooks/use-merchant-account'
 import './App.css'
 
 type AuthMode = 'login' | 'register'
 
-function App() {
+function MerchantApp() {
   const [mode, setMode] = useState<AuthMode>('login')
   const account = useMerchantAccount()
 
@@ -56,8 +58,14 @@ function App() {
           )}
         </section>
       </div>
+      {account.token && account.connected && <CheckoutManager token={account.token} />}
     </main>
   )
+}
+
+function App() {
+  const publicCheckoutId = window.location.pathname.match(/^\/checkout\/([0-9a-f-]{36})\/?$/i)?.[1]
+  return publicCheckoutId ? <PublicCheckout id={publicCheckoutId} /> : <MerchantApp />
 }
 
 export default App

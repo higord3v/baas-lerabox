@@ -25,7 +25,7 @@ description: Use ao integrar um novo endpoint do gateway Lera Box (Pix, cartão,
 Consulte sempre o Swagger do gateway antes de implementar:
 
 - **Base:** `https://api.branchpay.com.br/api`
-- **Swagger:** `https://api.branchpay.com.br/doscs`
+- **Swagger:** `https://api.branchpay.com.br/docs`
 
 Se o Swagger divergir do texto do desafio, **prevaleça o Swagger**.
 

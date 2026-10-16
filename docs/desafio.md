@@ -43,7 +43,7 @@ O candidato construirá um sistema no estilo Banking as a Service (BaaS). A apli
 ### Ambiente de simulação
 
 - **API:** https://api.branchpay.com.br
-- **Swagger:** https://api.branchpay.com.br/doscs
+- **Swagger:** https://api.branchpay.com.br/docs
 
 ---
 
@@ -141,7 +141,7 @@ Todos os valores monetários recebidos ou enviados ao gateway devem ser tratados
 ## 5. Contrato resumido do gateway
 
 **Base:** `https://api.branchpay.com.br/api`
-**Swagger:** `https://api.branchpay.com.br/doscs`
+**Swagger:** `https://api.branchpay.com.br/docs`
 **Autenticação protegida:** `Authorization: Bearer <access_token>`
 
 | Método | Rota | Auth | Observação |

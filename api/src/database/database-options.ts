@@ -12,6 +12,7 @@ import { CreateTransactions20261015000300 } from './migrations/20261015000300-cr
 import { CreateWithdrawals20261015000400 } from './migrations/20261015000400-create-withdrawals.js'
 import { CreateWebhookEvents20261015000500 } from './migrations/20261015000500-create-webhook-events.js'
 import { EncryptGatewayStoreKey20261015000600 } from './migrations/20261015000600-encrypt-gateway-store-key.js'
+import { ExtendCheckoutPayments20261016000100 } from './migrations/20261016000100-extend-checkout-payments.js'
 
 export const databaseOptions: DataSourceOptions = {
   type: 'mysql',
@@ -37,5 +38,6 @@ export const databaseOptions: DataSourceOptions = {
     CreateWithdrawals20261015000400,
     CreateWebhookEvents20261015000500,
     EncryptGatewayStoreKey20261015000600,
+    ExtendCheckoutPayments20261016000100,
   ],
 }

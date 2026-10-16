@@ -35,6 +35,9 @@ export class CheckoutLink {
   @Column({ name: 'amount_cents', type: 'int', unsigned: true })
   amountCents: number
 
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  description: string | null
+
   @Column({ type: 'varchar', length: 16 })
   method: 'PIX' | 'CARD'
 

@@ -11,7 +11,6 @@ import { CorrelationIdMiddleware } from './common/correlation-id.middleware.js'
 import { GatewayAccountModule } from './gateway-account/gateway-account.module.js'
 import { CheckoutModule } from './checkout/checkout.module.js'
 import { AddressModule } from './address/address.module.js'
-
 export const { ObserveModule, ObserveInstrument } = createObserveModule()
 
 @Module({

@@ -17,7 +17,7 @@ export function GatewayAccountPanel({ profile, connected, loading, busy, onConne
     const form = new FormData(formElement)
     const succeeded = await onConnect({
       document: String(form.get('document') ?? '').trim(),
-      password: String(form.get('password') ?? ''),
+      password: String(form.get('gatewayPassword') ?? ''),
     })
     if (succeeded) formElement.reset()
   }
@@ -36,11 +36,11 @@ export function GatewayAccountPanel({ profile, connected, loading, busy, onConne
             {connected ? 'Gateway conectado' : 'Gateway ainda não conectado'}
           </div>
           {!connected && (
-            <form className="form" onSubmit={handleSubmit}>
+            <form className="form" onSubmit={handleSubmit} autoComplete="off">
               <h3>Conectar gateway</h3>
-              <p className="form-help">Use o documento e a senha enviados por e-mail pelo Lera Box. A senha não é armazenada no BaaS.</p>
-              <FormField label="CPF ou CNPJ" name="document" inputMode="numeric" pattern="[0-9]{11}|[0-9]{14}" required placeholder="Apenas números" />
-              <FormField label="Senha do gateway" name="password" type="password" required autoComplete="off" />
+              <p className="form-help">Use o documento e a senha enviados por e-mail pelo Lera Box. Essa senha é diferente da senha local do BaaS.</p>
+              <FormField label="CPF ou CNPJ" name="document" inputMode="numeric" pattern="[0-9]{11}|[0-9]{14}" required placeholder="Apenas números" autoComplete="off" />
+              <FormField label="Senha do gateway" name="gatewayPassword" type="password" required autoComplete="off" />
               <button className="primary-button" disabled={busy}>Conectar conta</button>
             </form>
           )}

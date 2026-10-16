@@ -170,8 +170,9 @@ export class CheckoutService {
     if (!order.gatewayPaymentId) return
     try {
       const payment = await this.gateway.getPayment(order.gatewayPaymentId, token, correlationId)
-      if (payment.id !== order.gatewayPaymentId || payment.amount !== order.amountCents
-        || payment.externalReference !== order.externalReference) {
+      if (payment.id !== order.gatewayPaymentId
+        || (payment.amount !== null && payment.amount !== order.amountCents)
+        || (payment.externalReference !== null && payment.externalReference !== order.externalReference)) {
         throw new BadGatewayException('Consulta de pagamento divergente')
       }
       if (isFinalStatus(payment.status)) await this.repository.confirmPayment(order.id, payment.status)

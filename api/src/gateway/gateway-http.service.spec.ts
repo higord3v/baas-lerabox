@@ -20,6 +20,23 @@ describe('GatewayHttpService', () => {
     }))
   })
 
+  it('maps the login response returned by the gateway', async () => {
+    const httpRequest = vi.fn().mockReturnValue(of({
+      status: 201,
+      data: {
+        access_token: 'gateway-token',
+        token_type: 'Bearer',
+        codigoCliente: 123456,
+        chaveLoja: 'store-key',
+        user: { id: 'gateway-user', document: '12345678901' },
+      },
+    }))
+    const service = new GatewayHttpService({ request: httpRequest } as unknown as HttpService)
+
+    await expect(service.login({ document: '12345678901', password: 'secret' }, 'correlation'))
+      .resolves.toEqual({ accessToken: 'gateway-token', customerCode: '123456', storeKey: 'store-key' })
+  })
+
   it('maps invalid gateway credentials and malformed success responses', async () => {
     const httpRequest = vi.fn().mockReturnValueOnce(throwError(() => ({
       isAxiosError: true, response: { status: 401 },
@@ -45,5 +62,16 @@ describe('GatewayHttpService', () => {
     expect(httpRequest).toHaveBeenCalledWith(expect.objectContaining({
       headers: { 'X-Correlation-Id': 'correlation', Authorization: 'Bearer token' },
     }))
+  })
+
+  it('reads a status-only payment query after a validated charge', async () => {
+    const httpRequest = vi.fn().mockReturnValue(of({
+      status: 200,
+      data: { status: 'APPROVED' },
+    }))
+    const service = new GatewayHttpService({ request: httpRequest } as unknown as HttpService)
+
+    await expect(service.getPayment('payment-id', 'token', 'correlation'))
+      .resolves.toEqual({ id: 'payment-id', status: 'APPROVED', amount: null, externalReference: null })
   })
 })

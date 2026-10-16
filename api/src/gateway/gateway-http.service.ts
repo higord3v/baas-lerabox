@@ -76,6 +76,13 @@ export interface GatewayPayment {
   txid: string | null
 }
 
+export interface GatewayPaymentStatus {
+  id: string
+  status: string
+  amount: number | null
+  externalReference: string | null
+}
+
 @Injectable()
 export class GatewayHttpService {
   private readonly logger = new Logger(GatewayHttpService.name)
@@ -92,7 +99,7 @@ export class GatewayHttpService {
     if (!isRecord(response)) throw new BadGatewayException('Resposta inválida do gateway')
 
     const accessToken = readString(response, 'accessToken', 'access_token', 'token')
-    const customerCode = readString(response, 'CodigoCliente', 'codigoCliente', 'customerCode')
+    const customerCode = readCustomerCode(response)
     const storeKey = readString(response, 'ChaveLoja', 'chaveLoja', 'storeKey')
     if (!accessToken || !customerCode || !storeKey) {
       throw new BadGatewayException('Resposta inválida do gateway')
@@ -127,8 +134,8 @@ export class GatewayHttpService {
     return parsePayment(await this.request('POST', '/payments/card', correlationId, input, token))
   }
 
-  async getPayment(id: string, token: string, correlationId: string): Promise<GatewayPayment> {
-    return parsePayment(await this.request('GET', `/payments/${encodeURIComponent(id)}`, correlationId, undefined, token))
+  async getPayment(id: string, token: string, correlationId: string): Promise<GatewayPaymentStatus> {
+    return parsePaymentStatus(await this.request('GET', `/payments/${encodeURIComponent(id)}`, correlationId, undefined, token), id)
   }
 
   private async request(method: 'GET' | 'POST', path: string, correlationId: string, body?: object, token?: string): Promise<unknown> {
@@ -178,6 +185,21 @@ function parsePayment(value: unknown): GatewayPayment {
   }
 }
 
+function parsePaymentStatus(value: unknown, requestedId: string): GatewayPaymentStatus {
+  if (!isRecord(value)) throw new BadGatewayException('Consulta de pagamento inválida')
+  const responseId = value.id
+  const status = readString(value, 'status')
+  const metadata = isRecord(value.metadata) ? value.metadata : {}
+  const externalReference = value.externalReference ?? metadata.externalReference
+  const amount = value.amount
+  if (!status || (responseId != null && (typeof responseId !== 'string' || responseId.length === 0))
+    || (amount != null && (typeof amount !== 'number' || !Number.isInteger(amount)))
+    || (externalReference != null && (typeof externalReference !== 'string' || externalReference.length === 0))) {
+    throw new BadGatewayException('Consulta de pagamento inválida')
+  }
+  return { id: responseId ?? requestedId, status, amount: amount ?? null, externalReference: externalReference ?? null }
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
@@ -186,6 +208,15 @@ function readString(record: Record<string, unknown>, ...keys: string[]): string 
   for (const key of keys) {
     const value = record[key]
     if (typeof value === 'string' && value.length > 0) return value
+  }
+  return null
+}
+
+function readCustomerCode(record: Record<string, unknown>): string | null {
+  for (const key of ['CodigoCliente', 'codigoCliente', 'customerCode']) {
+    const value = record[key]
+    if (typeof value === 'string' && value.length > 0) return value
+    if (typeof value === 'number' && Number.isSafeInteger(value) && value > 0) return String(value)
   }
   return null
 }

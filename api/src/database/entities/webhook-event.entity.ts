@@ -44,6 +44,9 @@ export class WebhookEvent {
   @Column({ type: 'json' })
   payload: Record<string, unknown>
 
+  @Column({ name: 'signature_valid', type: 'boolean', default: false })
+  signatureValid: boolean
+
   @Column({
     name: 'processing_status',
     type: 'varchar',

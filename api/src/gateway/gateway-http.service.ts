@@ -83,6 +83,29 @@ export interface GatewayPaymentStatus {
   externalReference: string | null
 }
 
+export type GatewayTransactionStatus = 'PENDING' | 'APPROVED' | 'DENIED' | 'EXPIRED' | 'CANCELLED'
+export type GatewayTransactionType = 'PIX' | 'CREDIT_CARD' | 'WITHDRAWAL'
+
+export interface GatewayWallet {
+  balanceCents: number
+}
+
+export interface GatewayTransaction {
+  id: string
+  type: GatewayTransactionType
+  status: GatewayTransactionStatus
+  amountCents: number
+  description: string | null
+  externalReference: string | null
+  occurredAt: string
+}
+
+export interface GatewayTransactionQuery {
+  status?: GatewayTransactionStatus
+  type?: GatewayTransactionType
+  limit: number
+}
+
 @Injectable()
 export class GatewayHttpService {
   private readonly logger = new Logger(GatewayHttpService.name)
@@ -136,6 +159,27 @@ export class GatewayHttpService {
 
   async getPayment(id: string, token: string, correlationId: string): Promise<GatewayPaymentStatus> {
     return parsePaymentStatus(await this.request('GET', `/payments/${encodeURIComponent(id)}`, correlationId, undefined, token), id)
+  }
+
+  async getWallet(token: string, correlationId: string): Promise<GatewayWallet> {
+    const response = await this.request('GET', '/wallet', correlationId, undefined, token)
+    if (!isRecord(response)) throw new BadGatewayException('Carteira inválida do gateway')
+    const wallet = isRecord(response.wallet) ? response.wallet : response
+    const balance = wallet.balanceCents ?? wallet.balance ?? wallet.walletBalance
+    if (!Number.isSafeInteger(balance)) throw new BadGatewayException('Carteira inválida do gateway')
+    return { balanceCents: balance as number }
+  }
+
+  async getTransactions(query: GatewayTransactionQuery, token: string, correlationId: string): Promise<GatewayTransaction[]> {
+    const params = new URLSearchParams({ limit: String(query.limit) })
+    if (query.status) params.set('status', query.status)
+    if (query.type) params.set('type', query.type)
+    const response = await this.request('GET', `/wallet/transactions?${params}`, correlationId, undefined, token)
+    const body = isRecord(response) && isRecord(response.data) ? response.data : response
+    const entries = Array.isArray(body) ? body
+      : isRecord(body) ? body.transactions ?? body.items ?? body.data : null
+    if (!Array.isArray(entries)) throw new BadGatewayException('Extrato inválido do gateway')
+    return entries.map(parseTransaction)
   }
 
   private async request(method: 'GET' | 'POST', path: string, correlationId: string, body?: object, token?: string): Promise<unknown> {
@@ -198,6 +242,37 @@ function parsePaymentStatus(value: unknown, requestedId: string): GatewayPayment
     throw new BadGatewayException('Consulta de pagamento inválida')
   }
   return { id: responseId ?? requestedId, status, amount: amount ?? null, externalReference: externalReference ?? null }
+}
+
+function parseTransaction(value: unknown): GatewayTransaction {
+  if (!isRecord(value)) throw new BadGatewayException('Transação inválida do gateway')
+  const id = readString(value, 'id')
+  const type = readString(value, 'type')
+  const status = readString(value, 'status')
+  const amount = value.amountCents ?? value.amount
+  const occurredAt = readString(value, 'createdAt', 'occurredAt', 'date', 'timestamp')
+  const description = value.description
+  const metadata = isRecord(value.metadata) ? value.metadata : {}
+  const externalReference = value.externalReference ?? metadata.externalReference
+  if (!id || !isTransactionType(type) || !isTransactionStatus(status)
+    || !Number.isSafeInteger(amount)
+    || !occurredAt || Number.isNaN(Date.parse(occurredAt))
+    || (description != null && typeof description !== 'string')
+    || (externalReference != null && typeof externalReference !== 'string')) {
+    throw new BadGatewayException('Transação inválida do gateway')
+  }
+  return {
+    id, type, status, amountCents: Math.abs(amount as number),
+    description: description ?? null, externalReference: externalReference ?? null, occurredAt,
+  }
+}
+
+function isTransactionStatus(value: string | null): value is GatewayTransactionStatus {
+  return value === 'PENDING' || value === 'APPROVED' || value === 'DENIED' || value === 'EXPIRED' || value === 'CANCELLED'
+}
+
+function isTransactionType(value: string | null): value is GatewayTransactionType {
+  return value === 'PIX' || value === 'CREDIT_CARD' || value === 'WITHDRAWAL'
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

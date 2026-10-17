@@ -74,4 +74,53 @@ describe('GatewayHttpService', () => {
     await expect(service.getPayment('payment-id', 'token', 'correlation'))
       .resolves.toEqual({ id: 'payment-id', status: 'APPROVED', amount: null, externalReference: null })
   })
+
+  it('maps wallet balance and filtered transactions without exposing account data', async () => {
+    const httpRequest = vi.fn()
+      .mockReturnValueOnce(of({ status: 200, data: { balance: 64904, CodigoCliente: 123, ChaveLoja: 'hidden' } }))
+      .mockReturnValueOnce(of({ status: 200, data: { transactions: [{
+        id: 'payment-id', type: 'PIX', status: 'APPROVED', amount: 15000,
+        description: 'Pedido', externalReference: 'ORD-123', createdAt: '2026-10-16T18:52:43.052Z',
+      }] } }))
+    const service = new GatewayHttpService({ request: httpRequest } as unknown as HttpService)
+
+    await expect(service.getWallet('secret-token', 'correlation')).resolves.toEqual({ balanceCents: 64904 })
+    await expect(service.getTransactions({ status: 'APPROVED', type: 'PIX', limit: 10 }, 'secret-token', 'correlation'))
+      .resolves.toEqual([{
+        id: 'payment-id', type: 'PIX', status: 'APPROVED', amountCents: 15000,
+        description: 'Pedido', externalReference: 'ORD-123', occurredAt: '2026-10-16T18:52:43.052Z',
+      }])
+    expect(httpRequest).toHaveBeenNthCalledWith(1, expect.objectContaining({
+      url: 'https://api.branchpay.com.br/api/wallet',
+      headers: { 'X-Correlation-Id': 'correlation', Authorization: 'Bearer secret-token' },
+    }))
+    expect(httpRequest).toHaveBeenNthCalledWith(2, expect.objectContaining({
+      url: 'https://api.branchpay.com.br/api/wallet/transactions?limit=10&status=APPROVED&type=PIX',
+    }))
+  })
+
+  it('rejects malformed wallet and statement responses', async () => {
+    const httpRequest = vi.fn()
+      .mockReturnValueOnce(of({ status: 200, data: { balance: 'R$ 10,00' } }))
+      .mockReturnValueOnce(of({ status: 200, data: { transactions: [{ id: 'bad' }] } }))
+    const service = new GatewayHttpService({ request: httpRequest } as unknown as HttpService)
+
+    await expect(service.getWallet('token', 'correlation')).rejects.toBeInstanceOf(BadGatewayException)
+    await expect(service.getTransactions({ limit: 50 }, 'token', 'correlation')).rejects.toBeInstanceOf(BadGatewayException)
+  })
+
+  it('accepts nested wallet data and normalizes a withdrawal debit in cents', async () => {
+    const httpRequest = vi.fn()
+      .mockReturnValueOnce(of({ status: 200, data: { wallet: { balanceCents: 8000 } } }))
+      .mockReturnValueOnce(of({ status: 200, data: { data: { items: [{
+        id: 'withdrawal-1', type: 'WITHDRAWAL', status: 'APPROVED', amount: -2000,
+        metadata: { externalReference: 'WD-1' }, createdAt: '2026-10-16T18:52:43.052Z',
+      }] } } }))
+    const service = new GatewayHttpService({ request: httpRequest } as unknown as HttpService)
+
+    await expect(service.getWallet('token', 'correlation')).resolves.toEqual({ balanceCents: 8000 })
+    await expect(service.getTransactions({ limit: 5 }, 'token', 'correlation')).resolves.toEqual([expect.objectContaining({
+      id: 'withdrawal-1', amountCents: 2000, externalReference: 'WD-1', description: null,
+    })])
+  })
 })

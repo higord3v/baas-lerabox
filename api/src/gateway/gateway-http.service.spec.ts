@@ -123,4 +123,31 @@ describe('GatewayHttpService', () => {
       id: 'withdrawal-1', amountCents: 2000, externalReference: 'WD-1', description: null,
     })])
   })
+
+  it('sends a withdrawal with the merchant token and reads its status without returning the Pix key', async () => {
+    const httpRequest = vi.fn()
+      .mockReturnValueOnce(of({ status: 201, data: {
+        id: 'withdrawal-1', status: 'PENDING', amount: 10000, externalReference: 'WD-1',
+        pixKey: 'private@example.com', walletBalance: 5000,
+      } }))
+      .mockReturnValueOnce(of({ status: 200, data: { status: 'APPROVED' } }))
+    const service = new GatewayHttpService({ request: httpRequest } as unknown as HttpService)
+    const input = { amount: 10000, pixKey: 'private@example.com', document: '12345678901', externalReference: 'WD-1' }
+
+    await expect(service.createWithdrawal(input, 'merchant-token', 'correlation'))
+      .resolves.toEqual({ id: 'withdrawal-1', status: 'PENDING', amount: 10000, externalReference: 'WD-1' })
+    await expect(service.getWithdrawal('withdrawal-1', 'merchant-token', 'correlation'))
+      .resolves.toEqual({ id: 'withdrawal-1', status: 'APPROVED', amount: null, externalReference: null })
+    expect(httpRequest).toHaveBeenNthCalledWith(1, expect.objectContaining({
+      method: 'POST', url: 'https://api.branchpay.com.br/api/withdrawals', data: input,
+      headers: { 'X-Correlation-Id': 'correlation', Authorization: 'Bearer merchant-token' },
+    }))
+  })
+
+  it('rejects a malformed withdrawal response', async () => {
+    const httpRequest = vi.fn().mockReturnValue(of({ status: 201, data: { status: 'PENDING' } }))
+    const service = new GatewayHttpService({ request: httpRequest } as unknown as HttpService)
+    await expect(service.createWithdrawal({ amount: 100, pixKey: 'key', document: '12345678901', externalReference: 'WD-1' },
+      'token', 'correlation')).rejects.toBeInstanceOf(BadGatewayException)
+  })
 })

@@ -106,6 +106,21 @@ export interface GatewayTransactionQuery {
   limit: number
 }
 
+export interface GatewayWithdrawalInput {
+  amount: number
+  pixKey: string
+  document: string
+  description?: string
+  externalReference: string
+}
+
+export interface GatewayWithdrawal {
+  id: string
+  status: string
+  amount: number | null
+  externalReference: string | null
+}
+
 @Injectable()
 export class GatewayHttpService {
   private readonly logger = new Logger(GatewayHttpService.name)
@@ -180,6 +195,14 @@ export class GatewayHttpService {
       : isRecord(body) ? body.transactions ?? body.items ?? body.data : null
     if (!Array.isArray(entries)) throw new BadGatewayException('Extrato inválido do gateway')
     return entries.map(parseTransaction)
+  }
+
+  async createWithdrawal(input: GatewayWithdrawalInput, token: string, correlationId: string): Promise<GatewayWithdrawal> {
+    return parseWithdrawal(await this.request('POST', '/withdrawals', correlationId, input, token))
+  }
+
+  async getWithdrawal(id: string, token: string, correlationId: string): Promise<GatewayWithdrawal> {
+    return parseWithdrawal(await this.request('GET', `/withdrawals/${encodeURIComponent(id)}`, correlationId, undefined, token), id)
   }
 
   private async request(method: 'GET' | 'POST', path: string, correlationId: string, body?: object, token?: string): Promise<unknown> {
@@ -265,6 +288,22 @@ function parseTransaction(value: unknown): GatewayTransaction {
     id, type, status, amountCents: Math.abs(amount as number),
     description: description ?? null, externalReference: externalReference ?? null, occurredAt,
   }
+}
+
+function parseWithdrawal(value: unknown, requestedId?: string): GatewayWithdrawal {
+  if (!isRecord(value)) throw new BadGatewayException('Resposta de saque inválida do gateway')
+  const id = readString(value, 'id') ?? requestedId
+  const status = readString(value, 'status')
+  const metadata = isRecord(value.metadata) ? value.metadata : {}
+  const externalReference = value.externalReference ?? metadata.externalReference
+  const amount = value.amount
+  if (!id || !status || (value.id != null && typeof value.id !== 'string')
+    || (amount != null && (!Number.isSafeInteger(amount) || (amount as number) < 0))
+    || (externalReference != null && (typeof externalReference !== 'string' || externalReference.length === 0))) {
+    throw new BadGatewayException('Resposta de saque inválida do gateway')
+  }
+  return { id, status, amount: amount == null ? null : amount as number,
+    externalReference: externalReference == null ? null : externalReference as string }
 }
 
 function isTransactionStatus(value: string | null): value is GatewayTransactionStatus {

@@ -121,6 +121,12 @@ export interface GatewayWithdrawal {
   externalReference: string | null
 }
 
+export interface GatewayWebhookInput {
+  event: 'PAYMENT_PIX' | 'PAYMENT_CARD' | 'WITHDRAWAL'
+  url: string
+  secret: string
+}
+
 @Injectable()
 export class GatewayHttpService {
   private readonly logger = new Logger(GatewayHttpService.name)
@@ -203,6 +209,10 @@ export class GatewayHttpService {
 
   async getWithdrawal(id: string, token: string, correlationId: string): Promise<GatewayWithdrawal> {
     return parseWithdrawal(await this.request('GET', `/withdrawals/${encodeURIComponent(id)}`, correlationId, undefined, token), id)
+  }
+
+  async registerWebhook(input: GatewayWebhookInput, token: string, correlationId: string): Promise<void> {
+    await this.request('POST', '/webhooks', correlationId, input, token)
   }
 
   private async request(method: 'GET' | 'POST', path: string, correlationId: string, body?: object, token?: string): Promise<unknown> {

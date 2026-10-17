@@ -4,6 +4,16 @@ import { of, throwError } from 'rxjs'
 import { GatewayHttpService } from './gateway-http.service.js'
 
 describe('GatewayHttpService', () => {
+  it('registers a signed webhook with the merchant token', async () => {
+    const httpRequest = vi.fn().mockReturnValue(of({ status: 201, data: {} }))
+    const service = new GatewayHttpService({ request: httpRequest } as unknown as HttpService)
+    const input = { event: 'PAYMENT_PIX' as const, url: 'https://baas.example.com/webhooks/lera-box/id', secret: 'private-secret' }
+    await service.registerWebhook(input, 'merchant-token', 'correlation')
+    expect(httpRequest).toHaveBeenCalledWith(expect.objectContaining({
+      method: 'POST', url: 'https://api.branchpay.com.br/api/webhooks', data: input,
+      headers: { 'X-Correlation-Id': 'correlation', Authorization: 'Bearer merchant-token' },
+    }))
+  })
   it('reads the login response without exposing gateway credentials', async () => {
     const httpRequest = vi.fn().mockReturnValue(of({
       status: 201,

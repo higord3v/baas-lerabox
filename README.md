@@ -37,7 +37,7 @@ Após conectar a conta do gateway, o lojista cria links Pix ou cartão pela inte
 
 Rotas protegidas: `POST /checkout-links`, `GET /checkout-links`, `GET /checkout-links/:id` e `GET /checkout-links/fees?brand=VISA`. Rotas públicas: `GET /checkout/:id`, `POST /checkout/:id/pix`, `POST /checkout/:id/card` e `GET /checkout/:id/orders/:orderId`. Valores são enviados em centavos. Cada pagamento usa um `attemptKey` UUID para evitar cobranças repetidas quando a requisição é reenviada.
 
-O estado final de um pedido é confirmado por `GET /api/payments/:id` do gateway durante a consulta do resultado. A resposta inicial da cobrança, mesmo quando informa `APPROVED`, não atualiza o estado local. O tratamento de webhooks permanece no item 3.6.
+O estado final de um pedido é confirmado pelo webhook assinado ou por `GET /api/payments/:id` do gateway durante a consulta do resultado. A resposta inicial da cobrança, mesmo quando informa `APPROVED`, não atualiza o estado local.
 
 ## Carteira e extrato
 
@@ -57,7 +57,7 @@ O cadastro dos eventos `PAYMENT_PIX`, `PAYMENT_CARD` e `WITHDRAWAL` é feito pel
 
 `POST /webhooks/subscriptions` recebe `{ "event": "PAYMENT_PIX", "callbackBaseUrl": "https://api.exemplo.com" }` com o Bearer token local; `GET /webhooks/subscriptions` lista os callbacks do lojista sem revelar o segredo. O gateway envia os eventos para `POST /webhooks/lera-box/:subscriptionId`. Essa rota pública valida `X-Lera-Box-Signature` sobre o corpo bruto, registra o payload para auditoria e processa cada evento uma vez com chave única no MySQL. Pagamentos aprovados atualizam o pedido e marcam o link como pago; pagamentos recusados atualizam o pedido e deixam o link disponível. Saques têm o status local atualizado pelo evento assinado.
 
-Após persistir um evento, a API avisa os navegadores conectados por **Server-Sent Events (SSE)**. `GET /webhooks/updates` exige o Bearer token local e envia apenas avisos do próprio lojista; `GET /webhooks/checkout/:linkId/updates` avisa a página pública daquele link. O aviso não traz dados de pagamento: o frontend consulta novamente a API BaaS para obter o estado confirmado. O checkout público também mantém a consulta periódica como recuperação quando a conexão SSE não estiver disponível.
+O webhook atualiza apenas o estado persistido no backend. O frontend obtém o estado atualizado ao consultar a API BaaS; a página pública de checkout continua consultando periodicamente o resultado do próprio pagamento.
 
 ## Desenvolvimento e verificação
 

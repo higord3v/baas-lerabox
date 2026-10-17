@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm'
 import { In, LessThanOrEqual, Repository } from 'typeorm'
 import { CheckoutLink } from '../database/entities/checkout-link.entity.js'
 import { Order } from '../database/entities/order.entity.js'
+import { Withdrawal } from '../database/entities/withdrawal.entity.js'
 import { LocalStatementQuery, WalletRepositoryPort } from './wallet-repository.interface.js'
 
 @Injectable()
@@ -10,6 +11,7 @@ export class WalletRepository implements WalletRepositoryPort {
   constructor(
     @InjectRepository(Order) private readonly orders: Repository<Order>,
     @InjectRepository(CheckoutLink) private readonly links: Repository<CheckoutLink>,
+    @InjectRepository(Withdrawal) private readonly withdrawals: Repository<Withdrawal>,
   ) {}
 
   findOrders(userId: string, query: LocalStatementQuery): Promise<Order[]> {
@@ -37,6 +39,14 @@ export class WalletRepository implements WalletRepositoryPort {
       ]
     return this.links.find({
       where,
+      order: { updatedAt: 'DESC' },
+      take: query.limit,
+    })
+  }
+
+  findWithdrawals(userId: string, query: LocalStatementQuery): Promise<Withdrawal[]> {
+    return this.withdrawals.find({
+      where: { userId, ...(query.status ? { status: query.status } : {}) },
       order: { updatedAt: 'DESC' },
       take: query.limit,
     })

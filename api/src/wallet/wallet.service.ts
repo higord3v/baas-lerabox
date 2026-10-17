@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common'
 import { CheckoutLink } from '../database/entities/checkout-link.entity.js'
 import { Order } from '../database/entities/order.entity.js'
+import { Withdrawal } from '../database/entities/withdrawal.entity.js'
 import { GatewayAccountService } from '../gateway-account/gateway-account.service.js'
 import { GatewayHttpService, GatewayTransaction } from '../gateway/gateway-http.service.js'
 import { TransactionsQueryDto } from './dto/transactions-query.dto.js'
@@ -27,11 +28,12 @@ export class WalletService {
       status: query.status,
       method: query.type === 'PIX' ? 'PIX' as const : query.type === 'CREDIT_CARD' ? 'CARD' as const : undefined,
     }
-    const [gatewayTransactions, orders, links] = await Promise.all([
+    const [gatewayTransactions, orders, links, withdrawals] = await Promise.all([
       this.gateway.getTransactions(query, token, correlationId),
       query.type === 'WITHDRAWAL' ? Promise.resolve([]) : this.repository.findOrders(userId, localQuery),
       query.type === 'WITHDRAWAL' || (query.status && query.status !== 'EXPIRED' && query.status !== 'CANCELLED')
         ? Promise.resolve([]) : this.repository.findClosedLinks(userId, localQuery),
+      query.type && query.type !== 'WITHDRAWAL' ? Promise.resolve([]) : this.repository.findWithdrawals(userId, localQuery),
     ])
     const gatewayIds = new Set(gatewayTransactions.map((entry) => entry.id))
     const gatewayReferences = new Set(gatewayTransactions.map((entry) => entry.externalReference).filter(Boolean))
@@ -39,7 +41,9 @@ export class WalletService {
     const orderEntries = orders.filter((order) => !gatewayIds.has(order.gatewayPaymentId ?? '')
       && !gatewayReferences.has(order.externalReference)).map(toOrderEntry)
     const linkEntries = links.map(toLinkEntry)
-    const items = [...gatewayEntries, ...orderEntries, ...linkEntries]
+    const withdrawalEntries = withdrawals.filter((withdrawal) => !gatewayIds.has(withdrawal.gatewayWithdrawalId ?? '')
+      && !gatewayReferences.has(withdrawal.externalReference)).map(toWithdrawalEntry)
+    const items = [...gatewayEntries, ...orderEntries, ...linkEntries, ...withdrawalEntries]
       .filter((entry) => (!query.status || entry.status === query.status) && (!query.type || entry.type === query.type))
       .sort((left, right) => Date.parse(right.occurredAt) - Date.parse(left.occurredAt))
       .slice(0, query.limit)
@@ -74,5 +78,20 @@ function toLinkEntry(link: CheckoutLink): StatementEntryDto {
     externalReference: link.externalReference,
     occurredAt: link.status === 'ACTIVE' && link.expiresAt ? link.expiresAt.toISOString() : link.updatedAt.toISOString(),
     source: 'checkout',
+  }
+}
+
+function toWithdrawalEntry(withdrawal: Withdrawal): StatementEntryDto {
+  const status = withdrawal.status
+  return {
+    id: withdrawal.id,
+    type: 'WITHDRAWAL',
+    status: status === 'APPROVED' || status === 'DENIED' || status === 'EXPIRED' || status === 'CANCELLED'
+      ? status : 'PENDING',
+    amountCents: withdrawal.amountCents,
+    description: 'Saque Pix',
+    externalReference: withdrawal.externalReference,
+    occurredAt: withdrawal.updatedAt.toISOString(),
+    source: 'withdrawal',
   }
 }

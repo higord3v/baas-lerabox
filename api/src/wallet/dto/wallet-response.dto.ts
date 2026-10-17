@@ -28,8 +28,8 @@ export class StatementEntryDto {
   @ApiProperty({ format: 'date-time' })
   occurredAt: string
 
-  @ApiProperty({ enum: ['gateway', 'checkout'] })
-  source: 'gateway' | 'checkout'
+  @ApiProperty({ enum: ['gateway', 'checkout', 'withdrawal'] })
+  source: 'gateway' | 'checkout' | 'withdrawal'
 }
 
 export class StatementResponseDto {

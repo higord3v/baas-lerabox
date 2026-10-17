@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Feedback } from './components/feedback'
 import { CheckoutManager } from './components/checkout-manager'
 import { GatewayAccountPanel } from './components/gateway-account-panel'
@@ -10,6 +10,7 @@ import { SiteHeader } from './components/site-header'
 import { StatementPage } from './components/statement-page'
 import { WalletPage } from './components/wallet-page'
 import { useMerchantAccount } from './hooks/use-merchant-account'
+import { useWebhookUpdates } from './hooks/use-webhook-updates'
 import './App.css'
 
 type AuthMode = 'login' | 'register'
@@ -17,7 +18,10 @@ type AuthMode = 'login' | 'register'
 function MerchantApp() {
   const [mode, setMode] = useState<AuthMode>('login')
   const [pathname, setPathname] = useState(window.location.pathname)
+  const [updateVersion, setUpdateVersion] = useState(0)
   const account = useMerchantAccount()
+  const notifyUpdate = useCallback(() => setUpdateVersion((value) => value + 1), [])
+  useWebhookUpdates(account.token, notifyUpdate)
 
   useEffect(() => {
     function handlePopState() {
@@ -72,11 +76,11 @@ function MerchantApp() {
               />
             </section>
           ) : pathname === '/checkout' ? (
-            <CheckoutManager token={account.token} />
+            <CheckoutManager token={account.token} updateVersion={updateVersion} />
           ) : pathname === '/extrato' ? (
-            <StatementPage token={account.token} />
+            <StatementPage token={account.token} updateVersion={updateVersion} />
           ) : (
-            <WalletPage token={account.token} />
+            <WalletPage token={account.token} updateVersion={updateVersion} />
           )}
         </div>
       ) : (

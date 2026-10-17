@@ -3,7 +3,7 @@ import { errorMessage } from '../api/client'
 import { getStatement, type StatementEntry, type TransactionStatus, type TransactionType } from '../api/wallet'
 import { TransactionList } from './transaction-list'
 
-export function StatementPage({ token }: { token: string }) {
+export function StatementPage({ token, updateVersion }: { token: string; updateVersion: number }) {
   const [status, setStatus] = useState<TransactionStatus | ''>('')
   const [type, setType] = useState<TransactionType | ''>('')
   const [items, setItems] = useState<StatementEntry[]>([])
@@ -24,7 +24,7 @@ export function StatementPage({ token }: { token: string }) {
       })
       .finally(() => { if (!controller.signal.aborted) setLoading(false) })
     return () => controller.abort()
-  }, [token, status, type, refresh])
+  }, [token, status, type, refresh, updateVersion])
 
   function reload() {
     setLoading(true)

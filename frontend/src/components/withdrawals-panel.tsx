@@ -18,7 +18,7 @@ function statusLabel(status: string): string {
     EXPIRED: 'Expirado' }[status] ?? status
 }
 
-export function WithdrawalsPanel({ token, onChanged }: { token: string; onChanged: () => void }) {
+export function WithdrawalsPanel({ token, onChanged, updateVersion }: { token: string; onChanged: () => void; updateVersion: number }) {
   const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([])
   const [amount, setAmount] = useState('')
   const [pixKey, setPixKey] = useState('')
@@ -38,7 +38,7 @@ export function WithdrawalsPanel({ token, onChanged }: { token: string; onChange
         if (!controller.signal.aborted) setError(errorMessage(reason, 'Falha ao carregar saques.'))
       })
     return () => controller.abort()
-  }, [token])
+  }, [token, updateVersion])
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()

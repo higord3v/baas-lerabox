@@ -5,7 +5,7 @@ import { errorMessage } from '../api/client'
 const brands: CardBrand[] = ['VISA', 'MASTERCARD', 'ELO']
 const currency = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })
 
-export function CheckoutManager({ token }: { token: string }) {
+export function CheckoutManager({ token, updateVersion }: { token: string; updateVersion: number }) {
   const [links, setLinks] = useState<CheckoutLink[]>([])
   const [method, setMethod] = useState<PaymentMethod>('PIX')
   const [brand, setBrand] = useState<CardBrand>('VISA')
@@ -20,7 +20,7 @@ export function CheckoutManager({ token }: { token: string }) {
     listCheckouts(token).then((value) => { if (active) setLinks(value) })
       .catch((reason: unknown) => { if (active) setError(errorMessage(reason, 'Falha ao carregar links.')) })
     return () => { active = false }
-  }, [token])
+  }, [token, updateVersion])
 
   useEffect(() => {
     if (method !== 'CARD') return

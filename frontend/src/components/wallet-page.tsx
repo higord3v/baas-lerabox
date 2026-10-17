@@ -5,7 +5,7 @@ import { WithdrawalsPanel } from './withdrawals-panel'
 
 const currency = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })
 
-export function WalletPage({ token, updateVersion }: { token: string; updateVersion: number }) {
+export function WalletPage({ token }: { token: string }) {
   const [balance, setBalance] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -24,7 +24,7 @@ export function WalletPage({ token, updateVersion }: { token: string; updateVers
       })
       .finally(() => { if (!controller.signal.aborted) setLoading(false) })
     return () => controller.abort()
-  }, [token, refresh, updateVersion])
+  }, [token, refresh])
 
   function reload() {
     setLoading(true)
@@ -43,7 +43,7 @@ export function WalletPage({ token, updateVersion }: { token: string; updateVers
         <strong>{balance === null ? '—' : currency.format(balance / 100)}</strong>
         <small>{loading ? 'Atualizando carteira...' : 'Saldo informado pelo gateway'}</small>
       </div>
-      <WithdrawalsPanel token={token} onChanged={reload} updateVersion={updateVersion} />
+      <WithdrawalsPanel token={token} onChanged={reload} />
     </section>
   )
 }

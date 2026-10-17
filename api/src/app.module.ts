@@ -13,6 +13,7 @@ import { CheckoutModule } from './checkout/checkout.module.js'
 import { AddressModule } from './address/address.module.js'
 import { WalletModule } from './wallet/wallet.module.js'
 import { WithdrawalsModule } from './withdrawals/withdrawals.module.js'
+import { WebhooksModule } from './webhooks/webhooks.module.js'
 export const { ObserveModule, ObserveInstrument } = createObserveModule()
 
 @Module({
@@ -24,6 +25,7 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule()
     AddressModule,
     WalletModule,
     WithdrawalsModule,
+    WebhooksModule,
     // Distributed tracing, auto-correlated logs, request/job metrics, error
     // telemetry, alarms, and more — out of the box. Sign up at https://observe.nestjs.com
     ObserveModule.forRoot({

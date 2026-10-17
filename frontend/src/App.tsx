@@ -7,7 +7,8 @@ import { LoginForm } from './components/login-form'
 import { RegisterForm } from './components/register-form'
 import { PublicCheckout } from './components/public-checkout'
 import { SiteHeader } from './components/site-header'
-import { StatementPage, WalletPage } from './components/merchant-pages'
+import { StatementPage } from './components/statement-page'
+import { WalletPage } from './components/wallet-page'
 import { useMerchantAccount } from './hooks/use-merchant-account'
 import './App.css'
 
@@ -73,9 +74,9 @@ function MerchantApp() {
           ) : pathname === '/checkout' ? (
             <CheckoutManager token={account.token} />
           ) : pathname === '/extrato' ? (
-            <StatementPage />
+            <StatementPage token={account.token} />
           ) : (
-            <WalletPage />
+            <WalletPage token={account.token} />
           )}
         </div>
       ) : (

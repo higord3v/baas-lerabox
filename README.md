@@ -1,6 +1,6 @@
 # Lera Box BaaS
 
-Aplicação para lojistas com API NestJS, interface React e banco MySQL próprio. A API integra o gateway Lera Box por HTTP. Os fluxos de conta, checkout, carteira, extrato e saques dos itens 3.1 a 3.5 estão disponíveis; webhooks ainda serão implementados.
+Aplicação para lojistas com API NestJS, interface React e banco MySQL próprio. A API integra o gateway Lera Box por HTTP. Os fluxos de conta, checkout, carteira, extrato, saques e webhooks dos itens 3.1 a 3.6 estão disponíveis.
 
 ## Iniciar com Docker
 
@@ -49,7 +49,15 @@ Rotas protegidas: `GET /wallet` retorna `balanceCents`; `GET /wallet/transaction
 
 Na página **Carteira**, o lojista pode solicitar um saque para uma chave Pix de outra conta, informando valor em reais, chave Pix e CPF/CNPJ do titular. O frontend converte o valor para centavos antes de chamar o BaaS. O gateway disponibiliza destino por chave Pix (`pixKey`); não há campos de agência e conta no contrato atual.
 
-Rotas protegidas: `POST /withdrawals` solicita o saque, `GET /withdrawals` lista as 20 solicitações locais mais recentes e `GET /withdrawals/:id` consulta o status atual no gateway. O `POST` exige `requestId` UUID, `amountCents`, `pixKey` e `document`; a referência externa `WD-<requestId>` evita repetir o saque em um reenvio. O BaaS cifra os dados de destino no banco e não os devolve na resposta. O estado local só é atualizado após `GET /api/withdrawals/:id`; até essa consulta confirmar outro estado, a solicitação permanece pendente. Saques também aparecem no extrato consolidado.
+Rotas protegidas: `POST /withdrawals` solicita o saque, `GET /withdrawals` lista as 20 solicitações locais mais recentes e `GET /withdrawals/:id` consulta o status atual no gateway. O `POST` exige `requestId` UUID, `amountCents`, `pixKey` e `document`; a referência externa `WD-<requestId>` evita repetir o saque em um reenvio. O BaaS cifra os dados de destino no banco e não os devolve na resposta. O estado local só é atualizado após consulta ativa ao gateway ou webhook assinado; até a confirmação, a solicitação permanece pendente. Saques também aparecem no extrato consolidado.
+
+## Webhooks
+
+O cadastro dos eventos `PAYMENT_PIX`, `PAYMENT_CARD` e `WITHDRAWAL` é feito pela API BaaS, por exemplo no Swagger em `/docs`. Informe a URL pública HTTPS da API no corpo da requisição de cadastro. A API cria uma URL exclusiva por lojista e evento, gera um segredo HMAC e o guarda cifrado. A URL precisa ser alcançável pelo gateway; `localhost` e a rede interna do Docker não funcionam como callback externo.
+
+`POST /webhooks/subscriptions` recebe `{ "event": "PAYMENT_PIX", "callbackBaseUrl": "https://api.exemplo.com" }` com o Bearer token local; `GET /webhooks/subscriptions` lista os callbacks do lojista sem revelar o segredo. O gateway envia os eventos para `POST /webhooks/lera-box/:subscriptionId`. Essa rota pública valida `X-Lera-Box-Signature` sobre o corpo bruto, registra o payload para auditoria e processa cada evento uma vez com chave única no MySQL. Pagamentos aprovados atualizam o pedido e marcam o link como pago; pagamentos recusados atualizam o pedido e deixam o link disponível. Saques têm o status local atualizado pelo evento assinado.
+
+Após persistir um evento, a API avisa os navegadores conectados por **Server-Sent Events (SSE)**. `GET /webhooks/updates` exige o Bearer token local e envia apenas avisos do próprio lojista; `GET /webhooks/checkout/:linkId/updates` avisa a página pública daquele link. O aviso não traz dados de pagamento: o frontend consulta novamente a API BaaS para obter o estado confirmado. O checkout público também mantém a consulta periódica como recuperação quando a conexão SSE não estiver disponível.
 
 ## Desenvolvimento e verificação
 

@@ -41,7 +41,7 @@ O estado final de um pedido é confirmado por `GET /api/payments/:id` do gateway
 
 ## Carteira e extrato
 
-Após conectar o gateway, a página **Carteira** mostra o saldo consultado em tempo real e as cinco movimentações mais recentes. A página **Extrato** reúne transações do gateway com pedidos e links encerrados registrados no BaaS. Os filtros de situação (sucesso, falha, expirado, cancelado e pendente) e tipo (Pix, cartão ou saque) são aplicados no backend, sempre para o lojista autenticado.
+Após conectar o gateway, a página **Carteira** mostra o saldo consultado em tempo real e permite solicitar saques. A página **Extrato** reúne transações do gateway com pedidos e links encerrados registrados no BaaS. Os filtros de situação (sucesso, falha, expirado, cancelado e pendente) e tipo (Pix, cartão ou saque) são aplicados no backend, sempre para o lojista autenticado.
 
 Rotas protegidas: `GET /wallet` retorna `balanceCents`; `GET /wallet/transactions?status=&type=&limit=` retorna `items`, ordenados dos mais recentes aos mais antigos. O limite padrão é 50 e o máximo é 100. As duas rotas exigem o Bearer token local; somente o backend usa o token do gateway.
 

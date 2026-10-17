@@ -124,7 +124,7 @@ export function PublicCheckout({ id }: { id: string }) {
           </div> : link.status !== 'ACTIVE' ? <p className="feedback feedback--error">Este link está {link.status.toLowerCase()}.</p> : link.method === 'PIX' ?
             <form className="form" onSubmit={submitPix}>
               <label className="form-field">CPF ou CNPJ do pagador<input name="payerDocument" inputMode="numeric" pattern="[0-9]{11}|[0-9]{14}" required placeholder="Apenas números" /></label>
-              <button className="primary-button" disabled={busy}>Gerar Pix</button>
+              <button className="primary-button" disabled={busy}>Pagar Pix</button>
             </form> : <form className="form" onSubmit={submitCard} autoComplete="off">
               <label className="form-field">Número do cartão<input name="cardNumber" inputMode="numeric" pattern="[0-9 ]{13,23}" required /></label>
               <label className="form-field">Nome no cartão<input name="cardHolder" required maxLength={120} /></label>

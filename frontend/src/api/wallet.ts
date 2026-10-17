@@ -15,7 +15,7 @@ export interface StatementEntry {
   description: string | null
   externalReference: string | null
   occurredAt: string
-  source: 'gateway' | 'checkout'
+  source: 'gateway' | 'checkout' | 'withdrawal'
 }
 
 export interface StatementQuery {

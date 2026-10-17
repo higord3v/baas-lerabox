@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { errorMessage } from '../api/client'
 import { getStatement, getWallet, type StatementEntry } from '../api/wallet'
 import { TransactionList } from './transaction-list'
+import { WithdrawalsPanel } from './withdrawals-panel'
 
 const currency = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })
 
@@ -45,6 +46,7 @@ export function WalletPage({ token }: { token: string }) {
         <strong>{balance === null ? '—' : currency.format(balance / 100)}</strong>
         <small>{loading ? 'Atualizando carteira...' : 'Saldo informado pelo gateway'}</small>
       </div>
+      <WithdrawalsPanel token={token} onChanged={reload} />
       <div className="statement-card">
         <div className="statement-card__heading"><h2>Movimentações recentes</h2><span>Últimas 5</span></div>
         {loading && balance === null ? <p className="statement-empty">Carregando movimentações...</p> : <TransactionList items={transactions} emptyMessage="Nenhuma movimentação recente." />}

@@ -1,6 +1,6 @@
 # Lera Box BaaS
 
-Aplicação para lojistas com API NestJS, interface React e banco MySQL próprio. A API integra o gateway Lera Box por HTTP. Os fluxos de conta, checkout, carteira e extrato dos itens 3.1 a 3.4 estão disponíveis; saques e webhooks ainda serão implementados.
+Aplicação para lojistas com API NestJS, interface React e banco MySQL próprio. A API integra o gateway Lera Box por HTTP. Os fluxos de conta, checkout, carteira, extrato e saques dos itens 3.1 a 3.5 estão disponíveis; webhooks ainda serão implementados.
 
 ## Iniciar com Docker
 
@@ -44,6 +44,12 @@ O estado final de um pedido é confirmado por `GET /api/payments/:id` do gateway
 Após conectar o gateway, a página **Carteira** mostra o saldo consultado em tempo real e as cinco movimentações mais recentes. A página **Extrato** reúne transações do gateway com pedidos e links encerrados registrados no BaaS. Os filtros de situação (sucesso, falha, expirado, cancelado e pendente) e tipo (Pix, cartão ou saque) são aplicados no backend, sempre para o lojista autenticado.
 
 Rotas protegidas: `GET /wallet` retorna `balanceCents`; `GET /wallet/transactions?status=&type=&limit=` retorna `items`, ordenados dos mais recentes aos mais antigos. O limite padrão é 50 e o máximo é 100. As duas rotas exigem o Bearer token local; somente o backend usa o token do gateway.
+
+## Saques
+
+Na página **Carteira**, o lojista pode solicitar um saque para uma chave Pix de outra conta, informando valor em reais, chave Pix e CPF/CNPJ do titular. O frontend converte o valor para centavos antes de chamar o BaaS. O gateway disponibiliza destino por chave Pix (`pixKey`); não há campos de agência e conta no contrato atual.
+
+Rotas protegidas: `POST /withdrawals` solicita o saque, `GET /withdrawals` lista as 20 solicitações locais mais recentes e `GET /withdrawals/:id` consulta o status atual no gateway. O `POST` exige `requestId` UUID, `amountCents`, `pixKey` e `document`; a referência externa `WD-<requestId>` evita repetir o saque em um reenvio. O BaaS cifra os dados de destino no banco e não os devolve na resposta. O estado local só é atualizado após `GET /api/withdrawals/:id`; até essa consulta confirmar outro estado, a solicitação permanece pendente. Saques também aparecem no extrato consolidado.
 
 ## Desenvolvimento e verificação
 

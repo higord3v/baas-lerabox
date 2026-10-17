@@ -10,7 +10,6 @@ import { WebhookSubscriptionResponseDto } from './dto/webhook-subscription-respo
 import { parseWebhookPayload } from './webhook-payload.js'
 import { WEBHOOKS_REPOSITORY, type WebhooksRepositoryPort } from './webhooks-repository.interface.js'
 import { SignatureVerifierService } from './signature-verifier.service.js'
-import { WebhookUpdatesService } from './webhook-updates.service.js'
 
 @Injectable()
 export class WebhooksService {
@@ -22,7 +21,6 @@ export class WebhooksService {
     private readonly accounts: GatewayAccountService,
     private readonly cipher: TokenCipherService,
     private readonly signatures: SignatureVerifierService,
-    private readonly updates: WebhookUpdatesService,
   ) {}
 
   async register(userId: string, input: RegisterWebhookDto, correlationId: string): Promise<WebhookSubscriptionResponseDto> {
@@ -87,12 +85,7 @@ export class WebhooksService {
     if (!valid) throw new UnauthorizedException('Assinatura de webhook inválida')
     try {
       const parsed = parseWebhookPayload(payload, subscription.eventType)
-      const applied = await this.repository.applyEvent(event, parsed)
-      if (applied) {
-        const update = { event: subscription.eventType, status: parsed.status }
-        this.updates.publish(subscription.userId, update)
-        if (applied.checkoutLinkId) this.updates.publishCheckout(applied.checkoutLinkId, update)
-      }
+      await this.repository.applyEvent(event, parsed)
     } catch (error) {
       this.logger.warn(`Falha ao processar webhook ${event.eventKey}: ${error instanceof Error ? error.message : 'erro desconhecido'}`)
       await this.repository.markFailed(event.userId, event.eventKey, error instanceof Error ? error.message : 'Falha de processamento')

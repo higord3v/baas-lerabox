@@ -10,6 +10,6 @@ export interface WebhooksRepositoryPort {
   listSubscriptions(userId: string): Promise<WebhookSubscription[]>
   saveSubscription(subscription: WebhookSubscription): Promise<WebhookSubscription>
   insertEvent(event: WebhookEvent): Promise<void>
-  applyEvent(event: WebhookEvent, payload: WebhookPayload): Promise<{ checkoutLinkId: string | null } | null>
+  applyEvent(event: WebhookEvent, payload: WebhookPayload): Promise<void>
   markFailed(userId: string, eventKey: string, message: string): Promise<void>
 }

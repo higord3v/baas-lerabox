@@ -44,22 +44,20 @@ export class WebhooksRepository implements WebhooksRepositoryPort {
     }
   }
 
-  async applyEvent(event: WebhookEvent, payload: WebhookPayload): Promise<{ checkoutLinkId: string | null } | null> {
-    return this.dataSource.transaction(async (manager) => {
+  async applyEvent(event: WebhookEvent, payload: WebhookPayload): Promise<void> {
+    await this.dataSource.transaction(async (manager) => {
       const events = manager.getRepository(WebhookEvent)
       const current = await events.findOne({ where: { userId: event.userId, eventKey: event.eventKey }, lock: { mode: 'pessimistic_write' } })
-      if (!current || current.processingStatus === 'PROCESSED') return null
-      let checkoutLinkId: string | null = null
+      if (!current || current.processingStatus === 'PROCESSED') return
       if (event.eventType === 'WITHDRAWAL') {
         await this.applyWithdrawal(manager.getRepository(Withdrawal), event, payload)
       } else {
-        checkoutLinkId = await this.applyPayment(manager.getRepository(Order), manager.getRepository(CheckoutLink), event, payload)
+        await this.applyPayment(manager.getRepository(Order), manager.getRepository(CheckoutLink), event, payload)
       }
       current.processingStatus = 'PROCESSED'
       current.processedAt = new Date()
       current.errorMessage = null
       await events.save(current)
-      return { checkoutLinkId }
     })
   }
 
@@ -67,7 +65,7 @@ export class WebhooksRepository implements WebhooksRepositoryPort {
     await this.events.update({ userId, eventKey, processingStatus: 'RECEIVED' }, { processingStatus: 'FAILED', errorMessage: message.slice(0, 500) })
   }
 
-  private async applyPayment(orders: Repository<Order>, links: Repository<CheckoutLink>, event: WebhookEvent, payload: WebhookPayload): Promise<string> {
+  private async applyPayment(orders: Repository<Order>, links: Repository<CheckoutLink>, event: WebhookEvent, payload: WebhookPayload): Promise<void> {
     const matched = await orders.findOne({ where: payload.externalReference
       ? { userId: event.userId, externalReference: payload.externalReference }
       : { userId: event.userId, gatewayPaymentId: payload.gatewayId! } })
@@ -87,7 +85,6 @@ export class WebhooksRepository implements WebhooksRepositoryPort {
         await links.save(link)
       }
     }
-    return link.id
   }
 
   private async applyWithdrawal(withdrawals: Repository<Withdrawal>, event: WebhookEvent, payload: WebhookPayload): Promise<void> {

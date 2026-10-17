@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Headers, HttpCode, Param, ParseUUIDPipe, Post, Req, Sse, type MessageEvent } from '@nestjs/common'
+import { Body, Controller, Get, Headers, HttpCode, Param, ParseUUIDPipe, Post, Req } from '@nestjs/common'
 import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger'
 import type { RawBodyRequest } from '@nestjs/common'
 import type { Request } from 'express'
@@ -7,27 +7,11 @@ import { Public } from '../auth/public.decorator.js'
 import { RegisterWebhookDto } from './dto/register-webhook.dto.js'
 import { WebhookSubscriptionResponseDto } from './dto/webhook-subscription-response.dto.js'
 import { WebhooksService } from './webhooks.service.js'
-import { WebhookUpdatesService } from './webhook-updates.service.js'
-import type { Observable } from 'rxjs'
 
 @ApiTags('webhooks')
 @Controller('webhooks')
 export class WebhooksController {
-  constructor(private readonly webhooks: WebhooksService, private readonly updates: WebhookUpdatesService) {}
-
-  @Sse('updates')
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Notifica o lojista sobre eventos processados por webhook' })
-  updatesStream(@Req() request: AuthenticatedRequest): Observable<MessageEvent> {
-    return this.updates.stream(request.userId)
-  }
-
-  @Sse('checkout/:linkId/updates')
-  @Public()
-  @ApiOperation({ summary: 'Notifica a página pública sobre atualizações do checkout' })
-  checkoutUpdates(@Param('linkId', ParseUUIDPipe) linkId: string): Observable<MessageEvent> {
-    return this.updates.checkoutStream(linkId)
-  }
+  constructor(private readonly webhooks: WebhooksService) {}
 
   @Post('subscriptions')
   @ApiBearerAuth()

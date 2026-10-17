@@ -2,7 +2,6 @@ import { ValidationPipe, type INestApplication } from '@nestjs/common'
 import { Test } from '@nestjs/testing'
 import { NestExpressApplication } from '@nestjs/platform-express'
 import { createHmac, randomInt, randomUUID } from 'node:crypto'
-import type { Server } from 'node:http'
 import request from 'supertest'
 import { DataSource } from 'typeorm'
 import { AppModule } from '../src/app.module.js'
@@ -87,13 +86,10 @@ describe('gateway webhooks', () => {
   it('requires a merchant token to configure callbacks and validates the URL', async () => {
     const { token } = await merchant('11')
     await request(app.getHttpServer()).get('/webhooks/subscriptions').expect(401)
-    await request(app.getHttpServer()).get('/webhooks/updates').expect(401)
     await request(app.getHttpServer()).post('/webhooks/subscriptions').send({
       event: 'PAYMENT_PIX', callbackBaseUrl: 'https://baas.example.com',
     }).expect(401)
     await request(app.getHttpServer()).get('/webhooks/subscriptions')
-      .set('Authorization', 'Bearer invalid').expect(401)
-    await request(app.getHttpServer()).get('/webhooks/updates')
       .set('Authorization', 'Bearer invalid').expect(401)
     await request(app.getHttpServer()).post('/webhooks/subscriptions').set('Authorization', `Bearer ${token}`)
       .send({ event: 'PAYMENT_PIX', callbackBaseUrl: 'http://localhost:3000' }).expect(400)
@@ -113,35 +109,11 @@ describe('gateway webhooks', () => {
       installments: null, feePercent: null })
     const payload = { eventId: randomUUID(), event: 'PAYMENT_PIX', data: { id: order.gatewayPaymentId,
       externalReference: order.externalReference, amount: 15000, status: 'APPROVED' } }
-    const server = app.getHttpServer() as Server
-    const address = server.address()
-    if (!address || typeof address === 'string') throw new Error('Test server address unavailable')
-    const streamController = new AbortController()
-    const streamTimeout = setTimeout(() => streamController.abort(), 5000)
-    const stream = await fetch(`http://127.0.0.1:${address.port}/webhooks/updates`, {
-      headers: { Authorization: `Bearer ${token}` }, signal: streamController.signal,
-    })
-    expect(stream.status).toBe(200)
-    expect(stream.headers.get('content-type')).toContain('text/event-stream')
-    const reader = stream.body!.getReader()
-    expect(new TextDecoder().decode((await reader.read()).value)).toContain('connected')
-    const publicController = new AbortController()
-    const publicStream = await fetch(`http://127.0.0.1:${address.port}/webhooks/checkout/${link.id}/updates`, {
-      signal: publicController.signal,
-    })
-    expect(publicStream.status).toBe(200)
-    const publicReader = publicStream.body!.getReader()
-    expect(new TextDecoder().decode((await publicReader.read()).value)).toContain('connected')
     await request(app.getHttpServer()).post(path).send(payload).expect(401)
     expect((await database.getRepository(Order).findOneByOrFail({ id: order.id })).status).toBe('PENDING')
     await signedPost(path, 'wrong-secret', payload).expect(401)
     await signedPost(path, secret, payload).expect(200)
-    expect(new TextDecoder().decode((await reader.read()).value)).toContain('PAYMENT_PIX')
-    expect(new TextDecoder().decode((await publicReader.read()).value)).toContain('PAYMENT_PIX')
     await signedPost(path, secret, payload).expect(200)
-    streamController.abort()
-    publicController.abort()
-    clearTimeout(streamTimeout)
     expect((await database.getRepository(Order).findOneByOrFail({ id: order.id })).status).toBe('APPROVED')
     expect((await database.getRepository(CheckoutLink).findOneByOrFail({ id: link.id })).status).toBe('PAID')
     const events = await database.getRepository(WebhookEvent).find({ where: { userId } })

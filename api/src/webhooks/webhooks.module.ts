@@ -13,12 +13,11 @@ import { WEBHOOKS_REPOSITORY } from './webhooks-repository.interface.js'
 import { WebhooksController } from './webhooks.controller.js'
 import { WebhooksRepository } from './webhooks.repository.js'
 import { WebhooksService } from './webhooks.service.js'
-import { WebhookUpdatesService } from './webhook-updates.service.js'
 
 @Module({
   imports: [TypeOrmModule.forFeature([WebhookSubscription, WebhookEvent, Order, CheckoutLink, Withdrawal]), GatewayAccountModule, GatewayModule],
   controllers: [WebhooksController],
-  providers: [WebhooksService, WebhooksRepository, WebhookUpdatesService, SignatureVerifierService, TokenCipherService,
+  providers: [WebhooksService, WebhooksRepository, SignatureVerifierService, TokenCipherService,
     { provide: WEBHOOKS_REPOSITORY, useExisting: WebhooksRepository }],
 })
 export class WebhooksModule {}

@@ -10,11 +10,14 @@ const requestId = '77777777-7777-4777-8777-777777777777'
 const input = { requestId, amountCents: 10000, pixKey: 'owner@example.com', document: '12345678901' }
 
 function fixture() {
+  let current: Withdrawal
   const repository = {
-    createPending: vi.fn().mockImplementation(async (withdrawal: Withdrawal) => ({
-      withdrawal: Object.assign(withdrawal, { createdAt: new Date('2026-10-16T12:00:00Z') }), created: true,
-    })),
-    findOwned: vi.fn(), listOwned: vi.fn(), save: vi.fn().mockImplementation(async (withdrawal: Withdrawal) => withdrawal),
+    createPending: vi.fn().mockImplementation(async (withdrawal: Withdrawal) => {
+      current = Object.assign(withdrawal, { createdAt: new Date('2026-10-16T12:00:00Z') })
+      return { withdrawal: current, created: true }
+    }),
+    findOwned: vi.fn(), listOwned: vi.fn(), attachGatewayId: vi.fn(),
+    confirmStatus: vi.fn().mockImplementation(async (_id: string, status: string) => Object.assign(current, { status })),
     removeUnsent: vi.fn(),
   }
   const gateway = {
@@ -44,7 +47,8 @@ describe('WithdrawalsService', () => {
     }), 'gateway-token', 'correlation')
     expect(gateway.getWithdrawal).toHaveBeenCalledWith('gateway-id', 'gateway-token', 'correlation')
     expect(cipher.encrypt).toHaveBeenCalledWith(expect.stringContaining('owner@example.com'))
-    expect(repository.save).toHaveBeenCalledTimes(2)
+    expect(repository.attachGatewayId).toHaveBeenCalledTimes(1)
+    expect(repository.confirmStatus).toHaveBeenCalledTimes(1)
     expect(JSON.stringify(result)).not.toContain('owner@example.com')
   })
 
@@ -68,6 +72,6 @@ describe('WithdrawalsService', () => {
       id: 'gateway-id', status: 'APPROVED', amount: 9999, externalReference: `WD-${requestId}`,
     })
     await expect(service.create('merchant-1', input, 'correlation')).rejects.toBeInstanceOf(BadGatewayException)
-    expect(repository.save).not.toHaveBeenCalled()
+    expect(repository.attachGatewayId).not.toHaveBeenCalled()
   })
 })

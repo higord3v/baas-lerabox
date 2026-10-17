@@ -33,8 +33,13 @@ export class WithdrawalsRepository implements WithdrawalsRepositoryPort {
     return this.withdrawals.find({ where: { userId }, order: { createdAt: 'DESC' }, take: limit })
   }
 
-  save(withdrawal: Withdrawal): Promise<Withdrawal> {
-    return this.withdrawals.save(withdrawal)
+  async attachGatewayId(id: string, gatewayId: string): Promise<void> {
+    await this.withdrawals.update({ id }, { gatewayWithdrawalId: gatewayId })
+  }
+
+  async confirmStatus(id: string, status: string): Promise<Withdrawal> {
+    await this.withdrawals.update({ id, status: 'PENDING' }, { status })
+    return this.withdrawals.findOneByOrFail({ id })
   }
 
   async removeUnsent(id: string): Promise<void> {

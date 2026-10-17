@@ -57,7 +57,7 @@ export class WithdrawalsService {
     }
     validateGatewayWithdrawal(gatewayWithdrawal, withdrawal)
     withdrawal.gatewayWithdrawalId = gatewayWithdrawal.id
-    await this.repository.save(withdrawal)
+    await this.repository.attachGatewayId(withdrawal.id, gatewayWithdrawal.id)
     try {
       return await this.refresh(withdrawal, token, correlationId)
     } catch (error) {
@@ -82,8 +82,7 @@ export class WithdrawalsService {
     const gatewayWithdrawal = await this.gateway.getWithdrawal(withdrawal.gatewayWithdrawalId!, token, correlationId)
     validateGatewayWithdrawal(gatewayWithdrawal, withdrawal)
     if (gatewayWithdrawal.id !== withdrawal.gatewayWithdrawalId) throw new BadGatewayException('Consulta de saque divergente')
-    withdrawal.status = gatewayWithdrawal.status
-    return toResponse(await this.repository.save(withdrawal))
+    return toResponse(await this.repository.confirmStatus(withdrawal.id, gatewayWithdrawal.status))
   }
 }
 

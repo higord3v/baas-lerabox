@@ -50,6 +50,27 @@ export function PublicCheckout({ id }: { id: string }) {
     return () => window.clearTimeout(timer)
   }, [id, payment])
 
+  useEffect(() => {
+    let active = true
+    const events = new EventSource(`/api/webhooks/checkout/${encodeURIComponent(id)}/updates`)
+    events.onmessage = (message) => {
+      let update: unknown
+      try { update = JSON.parse(message.data) } catch { return }
+      if (typeof update !== 'object' || update === null || !('event' in update)) return
+      const orderId = sessionStorage.getItem(storageKey)
+      if (!orderId) return
+      Promise.all([getPublicCheckout(id), getPaymentResult(id, orderId)])
+        .then(([nextLink, nextPayment]) => {
+          if (!active) return
+          setLink(nextLink)
+          setPayment(nextPayment)
+          setError('')
+        })
+        .catch((reason: unknown) => { if (active) setError(errorMessage(reason, 'Não foi possível atualizar o pagamento.')) })
+    }
+    return () => { active = false; events.close() }
+  }, [id, storageKey])
+
   async function submitPix(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const document = String(new FormData(event.currentTarget).get('payerDocument') ?? '').replace(/\D/g, '')

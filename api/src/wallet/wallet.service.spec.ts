@@ -21,7 +21,8 @@ describe('WalletService', () => {
       { id: 'order-2', gatewayPaymentId: null, externalReference: 'ORD-2', status: 'DENIED',
         amountCents: 3500, checkoutLink: { method: 'CARD', description: 'Recusado' }, updatedAt: new Date('2026-10-16T16:00:00Z') },
     ] as Order[]
-    const repository = { findOrders: vi.fn().mockResolvedValue(orders), findClosedLinks: vi.fn().mockResolvedValue([link]) }
+    const repository = { findOrders: vi.fn().mockResolvedValue(orders), findClosedLinks: vi.fn().mockResolvedValue([link]),
+      findWithdrawals: vi.fn().mockResolvedValue([]) }
     const service = new WalletService(repository as unknown as WalletRepositoryPort,
       gateway as unknown as GatewayHttpService, accounts as unknown as GatewayAccountService)
 

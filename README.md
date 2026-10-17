@@ -1,6 +1,6 @@
 # Lera Box BaaS
 
-Aplicação para lojistas com API NestJS, interface React e banco MySQL próprio. A API integra o gateway Lera Box por HTTP. Os fluxos de conta e checkout dos itens 3.1 e 3.2 estão disponíveis; carteira, saques e webhooks ainda serão implementados.
+Aplicação para lojistas com API NestJS, interface React e banco MySQL próprio. A API integra o gateway Lera Box por HTTP. Os fluxos de conta, checkout, carteira e extrato dos itens 3.1 a 3.4 estão disponíveis; saques e webhooks ainda serão implementados.
 
 ## Iniciar com Docker
 
@@ -38,6 +38,12 @@ Após conectar a conta do gateway, o lojista cria links Pix ou cartão pela inte
 Rotas protegidas: `POST /checkout-links`, `GET /checkout-links`, `GET /checkout-links/:id` e `GET /checkout-links/fees?brand=VISA`. Rotas públicas: `GET /checkout/:id`, `POST /checkout/:id/pix`, `POST /checkout/:id/card` e `GET /checkout/:id/orders/:orderId`. Valores são enviados em centavos. Cada pagamento usa um `attemptKey` UUID para evitar cobranças repetidas quando a requisição é reenviada.
 
 O estado final de um pedido é confirmado por `GET /api/payments/:id` do gateway durante a consulta do resultado. A resposta inicial da cobrança, mesmo quando informa `APPROVED`, não atualiza o estado local. O tratamento de webhooks permanece no item 3.6.
+
+## Carteira e extrato
+
+Após conectar o gateway, a página **Carteira** mostra o saldo consultado em tempo real e as cinco movimentações mais recentes. A página **Extrato** reúne transações do gateway com pedidos e links encerrados registrados no BaaS. Os filtros de situação (sucesso, falha, expirado, cancelado e pendente) e tipo (Pix, cartão ou saque) são aplicados no backend, sempre para o lojista autenticado.
+
+Rotas protegidas: `GET /wallet` retorna `balanceCents`; `GET /wallet/transactions?status=&type=&limit=` retorna `items`, ordenados dos mais recentes aos mais antigos. O limite padrão é 50 e o máximo é 100. As duas rotas exigem o Bearer token local; somente o backend usa o token do gateway.
 
 ## Desenvolvimento e verificação
 

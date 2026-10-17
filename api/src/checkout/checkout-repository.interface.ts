@@ -11,7 +11,7 @@ export interface CheckoutRepositoryPort {
   createAttempt(linkId: string, attemptKey: string): Promise<{ order: Order; created: boolean }>
   findAttempt(linkId: string, attemptKey: string): Promise<Order | null>
   findOrder(linkId: string, orderId: string): Promise<Order | null>
-  saveOrder(order: Order): Promise<Order>
+  attachGatewayPayment(order: Order): Promise<void>
   removeRejectedAttempt(orderId: string): Promise<void>
   confirmPayment(orderId: string, status: Order['status']): Promise<void>
 }

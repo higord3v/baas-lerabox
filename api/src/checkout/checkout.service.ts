@@ -163,7 +163,7 @@ export class CheckoutService {
     order.pixEmv = payment.emv
     order.pixQrCodeBase64 = payment.qrCodeBase64
     order.pixTxid = payment.txid
-    await this.repository.saveOrder(order)
+    await this.repository.attachGatewayPayment(order)
   }
 
   private async verifyPayment(order: Order, token: string, correlationId: string): Promise<void> {

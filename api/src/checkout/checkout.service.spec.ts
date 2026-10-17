@@ -21,7 +21,7 @@ describe('CheckoutService', () => {
       findAttempt: vi.fn().mockResolvedValue(null),
       findLink: vi.fn().mockResolvedValue(link),
       createAttempt: vi.fn().mockResolvedValue({ order, created: true }),
-      saveOrder: vi.fn().mockResolvedValue(order),
+      attachGatewayPayment: vi.fn().mockResolvedValue(undefined),
       findOrder: vi.fn().mockImplementation(async () => order),
       confirmPayment: vi.fn().mockImplementation(async (_id: string, status: Order['status']) => {
         order.status = status

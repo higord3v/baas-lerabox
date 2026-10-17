@@ -70,8 +70,13 @@ export class CheckoutRepository implements CheckoutRepositoryPort {
     return this.orders.findOne({ where: { checkoutLinkId: linkId, attemptKey } })
   }
 
-  saveOrder(order: Order): Promise<Order> {
-    return this.orders.save(order)
+  async attachGatewayPayment(order: Order): Promise<void> {
+    await this.orders.update({ id: order.id }, {
+      gatewayPaymentId: order.gatewayPaymentId,
+      pixEmv: order.pixEmv,
+      pixQrCodeBase64: order.pixQrCodeBase64,
+      pixTxid: order.pixTxid,
+    })
   }
 
   async removeRejectedAttempt(orderId: string): Promise<void> {
